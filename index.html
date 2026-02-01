@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<meta name="theme-color" content="#7b1fa2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="おえかき">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.svg">
+<title>おえかき</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <div id="top-bar">
+    <div class="btn-group">
+      <button class="action-btn undo" id="undoBtn" disabled title="戻す">↩️</button>
+      <button class="action-btn redo" id="redoBtn" disabled title="やり直し">↪️</button>
+    </div>
+    <div class="btn-group">
+      <button class="action-btn save" id="saveBtn" title="保存">💾</button>
+      <button class="action-btn clear" id="clearBtn" title="全消去">🗑️</button>
+    </div>
+  </div>
+
+  <div id="canvas-wrap">
+    <canvas id="canvas"></canvas>
+    <canvas id="train-layer"></canvas>
+  </div>
+
+  <div id="tool-bar">
+    <button class="tool-btn active-pen" id="penBtn"><span class="icon">✏️</span>ペン</button>
+    <button class="tool-btn" id="eraserBtn"><span class="icon">🧹</span>消しゴム</button>
+    <button class="tool-btn" id="fillBtn"><span class="icon">🪣</span>ぬる</button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="trackBtn"><span class="icon">🛤️</span>せんろ</button>
+    <div id="stroke-control">
+      <label>ふとさ</label>
+      <input type="range" id="stroke-slider" min="2" max="30" value="5">
+    </div>
+  </div>
+
+  <div id="train-bar">
+    <button class="train-btn" id="trainSteam"><span class="icon">🚂</span>きしゃ</button>
+    <button class="train-btn" id="trainCommuter"><span class="icon">🚃</span>でんしゃ</button>
+    <button class="train-btn" id="trainShinkansen"><span class="icon">🚅</span>しんかんせん</button>
+    <button class="train-btn" id="trainMonorail"><span class="icon">🚝</span>モノレール</button>
+    <button class="train-btn stop-btn" id="trainStop"><span class="icon">⏹️</span>とめる</button>
+    <div class="train-color-control">
+      <label>いろ</label>
+      <div id="train-color-current"></div>
+      <div id="train-color-popup">
+        <div class="train-color-grid" id="train-color-grid"></div>
+      </div>
+    </div>
+    <div class="speed-control">
+      <label>はやさ</label>
+      <input type="range" id="speed-slider" min="1" max="5" value="2">
+    </div>
+  </div>
+
+  <div id="color-palette"></div>
+</div>
+
+<div id="overlay">
+  <div id="dialog">
+    <h2>ぜんぶ消す？</h2>
+    <p>えをぜんぶ消してもいいですか？</p>
+    <div class="dialog-btns">
+      <button class="cancel-btn" id="dialogCancel">やめる</button>
+      <button class="confirm-btn" id="dialogConfirm">消す</button>
+    </div>
+  </div>
+</div>
+
+<div id="snackbar"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

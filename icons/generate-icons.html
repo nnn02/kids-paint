@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head><title>Icon Generator</title></head>
+<body>
+<p>Right-click each canvas and "Save image as" to create the icon PNGs.</p>
+<canvas id="c192" width="192" height="192"></canvas>
+<canvas id="c512" width="512" height="512"></canvas>
+<script>
+function drawIcon(canvas) {
+  const s = canvas.width;
+  const ctx = canvas.getContext('2d');
+  // Background
+  ctx.fillStyle = '#7b1fa2';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, s, s, s * 0.18);
+  ctx.fill();
+  // Palette circle
+  const cx = s * 0.5, cy = s * 0.55, r = s * 0.3;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  // Color dots on palette
+  const colors = ['#f44336','#ff9800','#ffeb3b','#4caf50','#2196f3'];
+  colors.forEach((c, i) => {
+    const angle = (i / colors.length) * Math.PI * 2 - Math.PI / 2;
+    const dx = cx + r * 0.6 * Math.cos(angle);
+    const dy = cy + r * 0.6 * Math.sin(angle);
+    ctx.fillStyle = c;
+    ctx.beginPath();
+    ctx.arc(dx, dy, s * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  // Pen
+  ctx.save();
+  ctx.translate(s * 0.7, s * 0.2);
+  ctx.rotate(0.7);
+  ctx.fillStyle = '#ffeb3b';
+  ctx.fillRect(-s*0.03, 0, s*0.06, s*0.3);
+  ctx.fillStyle = '#795548';
+  ctx.fillRect(-s*0.03, s*0.25, s*0.06, s*0.08);
+  ctx.restore();
+}
+drawIcon(document.getElementById('c192'));
+drawIcon(document.getElementById('c512'));
+</script>
+</body>
+</html>
