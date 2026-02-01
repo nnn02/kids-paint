@@ -1,13 +1,16 @@
-const CACHE_NAME = 'kids-paint-v1';
+const CACHE_NAME = 'kids-paint-v2';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
-  './icons/icon-192.svg'
+  './icons/icon-192.svg',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
+// Install: cache all assets
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
@@ -15,6 +18,7 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
+// Activate: delete old caches
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
@@ -24,8 +28,15 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
+// Fetch: network-first, fallback to cache
 self.addEventListener('fetch', (e) => {
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request))
+    fetch(e.request)
+      .then((res) => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });

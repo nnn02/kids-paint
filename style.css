@@ -1,7 +1,13 @@
 * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
 html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #f0f0f0; }
 
-#app { display: flex; flex-direction: column; height: 100vh; }
+#app {
+  display: flex; flex-direction: column; height: 100vh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
 
 /* Top Bar */
 #top-bar {

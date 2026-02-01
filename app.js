@@ -29,14 +29,18 @@ let strokeWidth = 5;
 let drawing = false;
 let lastX, lastY;
 
-// History for undo/redo
-let history = [];
+// History for undo/redo (avoid shadowing window.history)
+let undoHistory = [];
 let redoStack = [];
 const MAX_HISTORY = 50;
 
 // Track (rail) data: array of strokes, each stroke is [{x,y}, ...]
 let trackStrokes = [];
 let currentTrackStroke = [];
+let trackRedoStack = [];
+// actionLog tracks whether each undo state was a 'draw' or 'track'
+let actionLog = [];
+let actionRedoLog = [];
 
 // Train animation
 let trainAnimId = null;
@@ -50,23 +54,32 @@ function resizeCanvas() {
   const wrap = document.getElementById('canvas-wrap');
   const w = wrap.clientWidth;
   const h = wrap.clientHeight;
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  // Save current drawing as image to preserve on resize
+  const tmpC = document.createElement('canvas');
+  tmpC.width = canvas.width; tmpC.height = canvas.height;
+  tmpC.getContext('2d').drawImage(canvas, 0, 0);
   canvas.width = w; canvas.height = h;
   trainLayer.width = w; trainLayer.height = h;
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
-  ctx.putImageData(imageData, 0, 0);
+  ctx.drawImage(tmpC, 0, 0);
 }
 
-function saveState() {
-  if (history.length >= MAX_HISTORY) history.shift();
-  history.push(canvas.toDataURL());
+function saveState(actionType) {
+  if (undoHistory.length >= MAX_HISTORY) {
+    undoHistory.shift();
+    actionLog.shift();
+  }
+  undoHistory.push(canvas.toDataURL());
+  actionLog.push(actionType || 'draw');
   redoStack = [];
+  actionRedoLog = [];
+  trackRedoStack = [];
   updateButtons();
 }
 
 function updateButtons() {
-  document.getElementById('undoBtn').disabled = history.length <= 0;
+  document.getElementById('undoBtn').disabled = undoHistory.length <= 0;
   document.getElementById('redoBtn').disabled = redoStack.length <= 0;
 }
 
@@ -248,9 +261,11 @@ function endDraw() {
     const simplified = simplifyPath(currentTrackStroke, 3);
     trackStrokes.push(simplified);
     currentTrackStroke = [];
+    saveState('track');
+    return;
   }
 
-  saveState();
+  saveState('draw');
 }
 
 function simplifyPath(pts, step) {
@@ -311,16 +326,25 @@ function floodFill(startX, startY, fillColor) {
 // Undo / Redo
 // ============================================================
 document.getElementById('undoBtn').addEventListener('click', () => {
-  if (history.length <= 1) return;
-  redoStack.push(history.pop());
-  restoreState(history[history.length - 1]);
-  if (trackStrokes.length > 0) trackStrokes.pop();
+  if (undoHistory.length <= 1) return;
+  redoStack.push(undoHistory.pop());
+  const act = actionLog.pop();
+  actionRedoLog.push(act);
+  if (act === 'track' && trackStrokes.length > 0) {
+    trackRedoStack.push(trackStrokes.pop());
+  }
+  restoreState(undoHistory[undoHistory.length - 1]);
   updateButtons();
 });
 document.getElementById('redoBtn').addEventListener('click', () => {
   if (redoStack.length === 0) return;
   const state = redoStack.pop();
-  history.push(state);
+  undoHistory.push(state);
+  const act = actionRedoLog.pop();
+  actionLog.push(act);
+  if (act === 'track' && trackRedoStack.length > 0) {
+    trackStrokes.push(trackRedoStack.pop());
+  }
   restoreState(state);
   updateButtons();
 });
@@ -338,8 +362,9 @@ document.getElementById('dialogConfirm').addEventListener('click', () => {
   document.getElementById('overlay').classList.remove('show');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  history = []; redoStack = [];
-  trackStrokes = [];
+  undoHistory = []; redoStack = [];
+  trackStrokes = []; trackRedoStack = [];
+  actionLog = []; actionRedoLog = [];
   stopTrain();
   saveState();
 });
@@ -347,12 +372,29 @@ document.getElementById('dialogConfirm').addEventListener('click', () => {
 // ============================================================
 // Save
 // ============================================================
-document.getElementById('saveBtn').addEventListener('click', () => {
+document.getElementById('saveBtn').addEventListener('click', async () => {
   const tmpC = document.createElement('canvas');
   tmpC.width = canvas.width; tmpC.height = canvas.height;
   const tmpCtx = tmpC.getContext('2d');
   tmpCtx.drawImage(canvas, 0, 0);
   tmpCtx.drawImage(trainLayer, 0, 0);
+
+  // Try Web Share API first (works well on iOS PWA)
+  if (navigator.canShare) {
+    try {
+      const blob = await new Promise(r => tmpC.toBlob(r, 'image/png'));
+      const file = new File([blob], 'oekaki_' + Date.now() + '.png', { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'おえかき' });
+        showSnackbar('共有しました！', '#4caf50');
+        return;
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') return; // user cancelled
+    }
+  }
+
+  // Fallback: download link
   const link = document.createElement('a');
   link.download = 'oekaki_' + Date.now() + '.png';
   link.href = tmpC.toDataURL('image/png');
